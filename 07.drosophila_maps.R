@@ -40,11 +40,12 @@ p1 <- world %>% ggplot() +
     tag = "a",
     fill = "Species Occurences",
     title = "GBIF observations") +
-  scale_color_viridis_c() + 
+  scale_color_viridis_c(name="GS (Mbp)") + 
   ylim(c(-60,85)) + theme_minimal() +
   theme(axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         plot.title = element_text(size = 10, face = "bold"))
+
 # heat map
 p2 <- world %>% ggplot() +
   geom_spatvector(fill = alpha("grey40", 0.5) ) +
