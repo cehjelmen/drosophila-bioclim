@@ -37,3 +37,11 @@ Purpose: Visualizations of spatial overlay outputs including:
 Purpose: Visualizations for plot 1 in `06.WorldClim_dros_figures.R`. Uses thermal tolerance map figure and locality info from GBIF to compare distributions (figure 1)
 
 
+## 08.all_gbif_dros_map_.R
+
+Purpose: download all gbif occurence records for the search term "Drosophila". Saves csv with species, lat, long, reference, and datasetkey in output folder of data folder
+
+
+## 09.research_university_mapping.R
+
+Purpose: uses list of top research universities to get lat-long information and then plots locations of universities on world map
