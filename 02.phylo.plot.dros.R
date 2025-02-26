@@ -81,6 +81,8 @@ colnames(locale.output)<-c("Species", "lat", "long")
 phy.dat<-locale.output
 write.csv(phy.dat, "data/output/all.locale.gbif.csv")
 #phy.dat<-read.csv("data/output/all.locale.gbif.csv")
+#if you read it in, remove the "x" variable
+#phy.dat$X<-NULL
 
 ####pulling in tree for plot####
 mytree<-read.tree("data/mytree2.tre")
@@ -113,7 +115,7 @@ dros.phymap<-phylo.to.map(mytree2, testagain2, plot=FALSE)
 
 #####Read in file (if you haven't already) to get subgenus info and color info####
 #read in file with subgenus breakup
-#gsdat<-read.csv("data/alldata.csv")
+#gsdat<-read.csv("data/climate_data_drosophila_Sept17.csv")
 str(gsdat)
 gsdat$Subgenus<-as.factor(gsdat$Subgenus)
 #make list of speices which are sophophora
@@ -247,6 +249,11 @@ cor.gs<-ggplot(newinfo2, aes(x=abs(lat), y=GS, color=GS))+
         legend.position = "bottom")
 ggMarginal(cor.gs, type="histogram", fill="grey90")
 summary(lm(GS~abs(lat), data=newinfo2))
+
+pdf("data/output/figure2.pdf", width=8.77, height=5.15)
+ggMarginal(cor.gs, type="histogram", fill="grey90")
+dev.off()
+
 #load worldmap
 worldmap<-map_data("world")
 

@@ -109,7 +109,9 @@ for(k in 5:23){
 write.csv(output.table.pic, "data/output/looped_output/pic.output.everything.csv")
 #make a dataframe
 #reading in old file
-#output.table.pic<-read.csv("data/output/looped_output/pic.output.everything.csv")
+#output.table.pic.df<-read.csv("data/output/looped_output/pic.output.everything.csv")
+#if you're reading in the old data, remove the first "X" variable
+#output.table.pic.df$X<-NULL
 output.table.pic.df<-as.data.frame(output.table.pic)
 str(output.table.pic.df)
 #fix structure of data
@@ -132,7 +134,7 @@ str(output.table.pic.df)
 output.table.pic.df$X<-NULL
 ####plots of PIC####
 ##facet plot of p-values
-ggplot(output.table.pic.df, aes(x=`p.value`, fill=Variable))+
+pic.facet<-ggplot(output.table.pic.df, aes(x=`p.value`, fill=Variable))+
   geom_density()+
   facet_wrap(~Variable, scales="free")+
   geom_vline(xintercept = 0.05, color="red", linewidth=1.1, linetype="dotdash")+
@@ -144,7 +146,10 @@ ggplot(output.table.pic.df, aes(x=`p.value`, fill=Variable))+
         axis.title.y=element_blank(),
         axis.title.x=element_text(size=14, face="bold", color="black"))+
   xlim(c(-0.2, 1.1))
-
+#to print pdf
+pdf("data/output/supp_facet_pic_fig.pdf", width=9.84, height=7.77)
+pic.facet
+dev.off()
 #break it up by bio5
 bio.5<-subset(output.table.pic.df, Variable=="Bio5")
 #the below plot facet by all 100 trees
@@ -161,8 +166,8 @@ bio.5<-subset(output.table.pic.df, Variable=="Bio5")
 #   xlim(c(-0.2, 1.1))
 
 #does hte data vary across trees?
-kruskal.test(`p-value` ~ Tree, data=bio.5)
-bio5.comp<-pairwise.wilcox.test(bio.5$`p-value`, bio.5$Tree,
+kruskal.test(`p.value` ~ Tree, data=bio.5)
+bio5.comp<-pairwise.wilcox.test(bio.5$`p.value`, bio.5$Tree,
                      p.adjust.method = "bonferroni")
 bio5.comp.mat<-bio5.comp$p.value
 #it varies in 0.044 comparisons
@@ -183,8 +188,8 @@ bio.10<-subset(output.table.pic.df, Variable=="Bio10")
 #         axis.title.x=element_text(size=14, face="bold", color="black"))+
 #   xlim(c(-0.2, 1.1))
 
-kruskal.test(`p-value` ~ Tree, data=bio.10)
-bio10.comp<-pairwise.wilcox.test(bio.10$`p-value`, bio.10$Tree,
+kruskal.test(`p.value` ~ Tree, data=bio.10)
+bio10.comp<-pairwise.wilcox.test(bio.10$`p.value`, bio.10$Tree,
                                 p.adjust.method = "bonferroni")
 bio10.comp.mat<-bio10.comp$p.value
 
@@ -206,8 +211,8 @@ bio.9<-subset(output.table.pic.df, Variable=="Bio9")
 #         axis.title.x=element_text(size=14, face="bold", color="black"))+
 #   xlim(c(-0.2, 1.1))
 
-kruskal.test(`p-value` ~ Tree, data=bio.9)
-bio9.comp<-pairwise.wilcox.test(bio.9$`p-value`, bio.9$Tree,
+kruskal.test(`p.value` ~ Tree, data=bio.9)
+bio9.comp<-pairwise.wilcox.test(bio.9$`p.value`, bio.9$Tree,
                                  p.adjust.method = "bonferroni")
 bio9.comp.mat<-bio9.comp$p.value
 #varies in 0.1365657 comparisons
@@ -228,8 +233,8 @@ bio.19<-subset(output.table.pic.df, Variable=="Bio19")
 #         axis.title.x=element_text(size=14, face="bold", color="black"))+
 #   xlim(c(-0.2, 1.1))
 
-kruskal.test(`p-value` ~ Tree, data=bio.19)
-bio19.comp<-pairwise.wilcox.test(bio.19$`p-value`, bio.19$Tree,
+kruskal.test(`p.value` ~ Tree, data=bio.19)
+bio19.comp<-pairwise.wilcox.test(bio.19$`p.value`, bio.19$Tree,
                                 p.adjust.method = "bonferroni")
 bio19.comp.mat<-bio19.comp$p.value
 #varies in 0.01393939 comparisons
@@ -248,7 +253,7 @@ ggplot(output.table.pic.df, aes(x=Estimate, fill=Variable))+
         axis.title.x=element_text(size=14, face="bold", color="black"))+
   xlim(c((min(output.table.pic.df$Estimate)-0.2), (abs(min((output.table.pic.df$Estimate)-0.2)))))
 #facet plots of adj r squared
-ggplot(output.table.pic.df, aes(x=`Adj. r-square`, fill=Variable))+
+ggplot(output.table.pic.df, aes(x=`Adj..r.square`, fill=Variable))+
   geom_density()+
   facet_wrap(~Variable, scales="free_y")+
   geom_vline(xintercept=0, colour="red", linewidth=1.1, linetype="dotdash")+
@@ -360,7 +365,7 @@ p.val<-ggplot(sig.dat, aes(x=p.value, fill=Variable))+
   geom_vline(data=mu, aes(xintercept=grp.median, color=Variable),
              linewidth=1)+
   annotate("text", x=1, y=7, 
-           label=("Median p-value\nBio5 = 0.087\nBio9 = 0.078\nBio10 = 0.065\nBio19 = 0.060"),
+           label=("Median p-value\nBio5 = 0.075\nBio9 = 0.102\nBio10 = 0.058\nBio19 = 0.061"),
            size=4, hjust=1)+
   theme_bw()+
   theme(
@@ -383,7 +388,7 @@ adj.r<-ggplot(sig.dat, aes(x=Adj..r.square, fill=Variable))+
   geom_vline(data=mu.r, aes(xintercept=grp.median, color=Variable),
              linewidth=1)+
   annotate("text", x=0.35, y=11.75, 
-           label=("Median Adj. R-squared\nBio5 = 0.028\nBio9 = 0.030\nBio10 = 0.034\nBio19 = 0.036"),
+           label=("Median Adj. R-squared\nBio5 = 0.038\nBio9 = 0.033\nBio10 = 0.043\nBio19 = 0.045"),
            size=4, hjust=1)+
   theme_bw()+
   theme(
@@ -406,7 +411,7 @@ est<-ggplot(sig.dat, aes(x=`Estimate`, fill=Variable))+
   geom_vline(data=mu.e, aes(xintercept=grp.median, color=Variable),
              linewidth=1)+
   annotate("text", x=0.7, y=18.5, 
-           label=("Median Estimate\nBio5 = -0.241\nBio9 = -0.059\nBio10 = -0.212\nBio19 = -0.0420"),
+           label=("Median Estimate\nBio5 = -0.244\nBio9 = -0.056\nBio10 = -0.207\nBio19 = -0.039"),
            size=4, hjust=1)+
   theme_bw()+
   theme(
@@ -419,10 +424,14 @@ est<-ggplot(sig.dat, aes(x=`Estimate`, fill=Variable))+
   )
   
 
-ggarrange(p.val, adj.r, est, common.legend = TRUE, legend="bottom",
+unique.bioclim<-ggarrange(p.val, adj.r, est, common.legend = TRUE, legend="bottom",
           nrow=1, labels="auto",
           hjust=-0.1, align="hv",
           font.label = list(size=20))
+pdf("data/output/figure3.pdf", width=14.21, height=4.25)
+unique.bioclim
+dev.off()
+
 # ?ggarrange
 # ggplot(sig.dat, aes(x=`p-value`, y=Variable,fill=Variable))+
 #   geom_violin(alpha=0.6, draw_quantiles = TRUE)+
@@ -504,6 +513,8 @@ for(i in 1:1000){
 }
 #write output
 write.csv(output.table.lm, "data/output/looped_output/lm.output.everything.csv")
+#output.table.lm.df<-read.csv("data/output/looped_output/lm.output.everything.csv")
+#output.table.lm.df$X<-NULL
 #make it a dataframe
 output.table.lm.df<-as.data.frame(output.table.lm)
 #fix structure issues
@@ -520,7 +531,7 @@ output.table.lm.df$Variable<-factor(output.table.lm.df$Variable, ordered=TRUE,
                                              "Bio16", "Bio17", "Bio18", "Bio19"))
 ####Linear model plots####
 #facet plots of p-values
-ggplot(output.table.lm.df, aes(x=`p-value`, fill=Variable))+
+lm.facet<-ggplot(output.table.lm.df, aes(x=`p.value`, fill=Variable))+
   geom_density()+
   facet_wrap(~Variable, scales="free")+
   geom_vline(xintercept = 0.05, color="red", linewidth=1.1, linetype="dotdash")+
@@ -531,6 +542,10 @@ ggplot(output.table.lm.df, aes(x=`p-value`, fill=Variable))+
         axis.title.y=element_blank(),
         axis.title.x=element_text(size=14, face="bold", color="black"))+
   xlim(c(-0.2, 1))
+
+pdf("data/output/looped_output/lm.model.facet.pvalue.pdf", width=9.83, height=7.76)
+lm.facet
+dev.off()
 ##Facet plot of "estimates" coefficients 
 ggplot(output.table.lm.df, aes(x=Estimate, fill=Variable))+
   geom_density()+
@@ -544,7 +559,7 @@ ggplot(output.table.lm.df, aes(x=Estimate, fill=Variable))+
         axis.title.x=element_text(size=14, face="bold", color="black"))
   
 ##Facet plot of adj. r-square
-ggplot(output.table.lm.df, aes(x=`Adj. r-square`, fill=Variable))+
+ggplot(output.table.lm.df, aes(x=`Adj..r.square`, fill=Variable))+
   geom_density()+
   facet_wrap(~Variable)+
   geom_vline(xintercept=0, colour="red", linewidth=1.1, linetype="dotdash")+
