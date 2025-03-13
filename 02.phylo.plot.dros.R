@@ -6,6 +6,8 @@ library(phytools)
 library(viridis)
 library(rgbif)
 library(ggExtra)
+library(lmtest)
+library(dplyr)
 
 #read in list of species
 gsdat<-read.csv("data/climate_data_drosophila_Sept17.csv", as.is=T)
@@ -250,8 +252,52 @@ cor.gs<-ggplot(newinfo2, aes(x=abs(lat), y=GS, color=GS))+
 ggMarginal(cor.gs, type="histogram", fill="grey90")
 summary(lm(GS~abs(lat), data=newinfo2))
 
-pdf("data/output/figure2.pdf", width=8.77, height=5.15)
-ggMarginal(cor.gs, type="histogram", fill="grey90")
+#need to check the need for weighted regression analysis
+gslmmod<-lm(GS~abs(lat), data=newinfo2)
+#plot the data
+plot(fitted(gslmmod), resid(gslmmod), xlab='Fitted Values', ylab='Residuals')
+abline(0,0)
+#significant--heteroscedasticity
+bptest(gslmmod)
+#do a weighting
+wt <- 1 / lm(abs(gslmmod$residuals) ~ gslmmod$fitted.values)$fitted.values^2
+#new model
+gswls_model <- lm(GS ~ abs(lat), data = newinfo2, weights=wt)
+#summary of results
+#significant p-value, adj. r^2 moves up to 0.07
+summary(gswls_model)
+#transform data for plot
+newinfo3 <- newinfo2 %>%
+  mutate(abs_lat = abs(lat))
+summary_data <- newinfo3 %>%
+  group_by(GS) %>%
+  summarise(
+    mean_abs_lat = mean(abs_lat, na.rm = TRUE),
+    sd_abs_lat = sd(abs_lat, na.rm = TRUE),  # Standard deviation
+    n = n(),  # Count for standard error calculation
+    se_abs_lat = sd_abs_lat / sqrt(n)  # Standard error
+  )
+weighted<-ggplot(summary_data, aes(x = mean_abs_lat, y = GS, fill=GS)) +
+  geom_errorbarh(aes(xmin = mean_abs_lat - sd_abs_lat, 
+                     xmax = mean_abs_lat + sd_abs_lat), 
+                 height = 0.2, color = "black") +  
+  # Horizontal whiskers for variation
+  geom_point(size = 3, shape=21) + 
+  # Scatter points
+  scale_fill_viridis(end=0.9, name="Genome Size \n(Mbp)")+
+  xlab("Distance from Equator (latitude)")+
+  ylab("Genome Size (Mbp)")+
+  theme_minimal()+
+  theme(axis.title=element_text(face="bold", size=14),
+        axis.text=element_text(size=12, color="black"),
+        legend.title = element_text(size=12, face="bold"),
+        legend.text = element_text(size=10),
+        legend.key.width = unit(3, "cm"),
+        legend.position = "bottom")
+ggMarginal(weighted, type="histogram", fill="grey90")
+
+pdf("data/output/distance_gs_weighted.pdf", width=8.77, height=5.15)
+ggMarginal(weighted, type="histogram", fill="grey90")
 dev.off()
 
 #load worldmap
