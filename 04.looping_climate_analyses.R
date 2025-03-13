@@ -9,6 +9,7 @@ library(ggplot2)
 library(viridis)
 library(dplyr)
 library(ggpubr)
+library(coda)
 
 ####read in climate data generated from 03.WorldClimdata-dros-code.R####
 dros<-read.csv("data/output/drosophila_bioclim.csv")
@@ -150,6 +151,51 @@ pic.facet<-ggplot(output.table.pic.df, aes(x=`p.value`, fill=Variable))+
 pdf("data/output/supp_facet_pic_fig.pdf", width=9.84, height=7.77)
 pic.facet
 dev.off()
+
+#hpd calculations
+#needs to set up a table with 19 bioclimatic variables
+#and lower and upper bounds
+hpd_dat<-matrix(,nrow=19, ncol=3)
+colnames(hpd_dat)<-c("Variable", "Lower", "Upper")
+
+i<-1
+for(i in 1:19){
+  levels(output.table.pic.df$Variable)
+  foo.dat<-subset(output.table.pic.df, Variable==levels(output.table.pic.df$Variable)[i])
+  runs_beta <- as.mcmc(foo.dat$Estimate)
+  hpd_results <- HPDinterval(runs_beta)
+  hpd_dat[i,1]<-levels(output.table.pic.df$Variable)[i]
+  hpd_dat[i,2]<-hpd_results[1]
+  hpd_dat[i,3]<-hpd_results[2]
+}
+hpd_dat<-as.data.frame(hpd_dat)
+hpd_dat$Lower<-as.numeric(hpd_dat$Lower)
+hpd_dat$Upper<-as.numeric(hpd_dat$Upper)
+hpd_dat$Variable<-factor(hpd_dat$Variable, ordered=TRUE,
+                                     levels=rev(c("Bio1", "Bio2", "Bio3", "Bio4",
+                                              "Bio5", "Bio6","Bio7", "Bio8",
+                                              "Bio9", "Bio10", "Bio11",
+                                              "Bio12", "Bio13", "Bio14",
+                                              "Bio15","Bio16", "Bio17",
+                                              "Bio18", "Bio19")))
+
+str(hpd_dat)
+#making a plot of higher posterior density
+ggplot(hpd_dat, aes(x=Variable, ymin=Lower, ymax=Upper))+
+  geom_linerange(color="slateblue", size=3)+
+  geom_point(aes(y=(Lower+Upper)/2), color="maroon", size=3)+
+  coord_flip()+
+  ylim(-0.5,0.5)+
+  ylab("Beta Coefficient")+
+  geom_hline(yintercept = 0, color="red", size=1.5, linetype="dashed")+
+  theme_minimal()+
+  ggtitle("95% HPD of Beta Coefficent for PIC Analyses")+
+  theme(axis.text=element_text(size=14, face="bold", color="black"),
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(size=16, face="bold"),
+        title=element_text(size=18, face="bold"))
+
+
 #break it up by bio5
 bio.5<-subset(output.table.pic.df, Variable=="Bio5")
 #the below plot facet by all 100 trees
