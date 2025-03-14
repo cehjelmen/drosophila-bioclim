@@ -181,7 +181,7 @@ hpd_dat$Variable<-factor(hpd_dat$Variable, ordered=TRUE,
 
 str(hpd_dat)
 #making a plot of higher posterior density
-ggplot(hpd_dat, aes(x=Variable, ymin=Lower, ymax=Upper))+
+hpd.plot<-ggplot(hpd_dat, aes(x=Variable, ymin=Lower, ymax=Upper))+
   geom_linerange(color="slateblue", size=3)+
   geom_point(aes(y=(Lower+Upper)/2), color="maroon", size=3)+
   coord_flip()+
@@ -195,6 +195,13 @@ ggplot(hpd_dat, aes(x=Variable, ymin=Lower, ymax=Upper))+
         axis.title.x=element_text(size=16, face="bold"),
         title=element_text(size=18, face="bold"))
 
+#save pdf of figure
+pdf("data/output/hpd_bioclim_figure.pdf", width=9.2, height=9.5)
+hpd.plot
+dev.off()
+
+#save table
+write.csv(hpd_dat, "data/output/looped_output/hpd_range.csv")
 
 #break it up by bio5
 bio.5<-subset(output.table.pic.df, Variable=="Bio5")
