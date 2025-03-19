@@ -10,33 +10,12 @@ library(ggpubr)
 #I have this set to work in our github Repo with the data folder#
 #setwd("~/Coding/R/Drosophila Climate Research/Data Drosophila")
 dat<-read.csv("data/climate_data_drosophila_Sept17.csv")
-#str(dat)
 tree<-read.tree("data/mytree2.tre")
-#plot(tree)
 
-####Functions for dataformatting and trimming
-gstrim<-function(datcol){
-  gsdat<-as.numeric(dat$MbDNA_Female[is.na(datcol)==0])
-  names(gsdat)<-dat$Species[is.na(datcol)==0]
-  return(gsdat)
-}
-gstmin.test<-gstrim(dat$TMin)
-
-vartrim<-function(datcol){
-  v.dat<-datcol[is.na(datcol)==0]
-  names(v.dat)<-dat$Species[is.na(datcol)==0]
-  return(v.dat)
-}
-tmin.test<-vartrim(dat$TMin)
-
-tree.trim<-function(datcol, tree.file){
-  
-}
 ####Trim datasets to those that have values for species####
 #tmin
 gstmin<-as.numeric(dat$MbDNA_Female[is.na(dat$TMin)==0])
 names(gstmin)<-dat$Species[is.na(dat$TMin)==0]
-
 tmin<-dat$TMin[is.na(dat$TMin)==0]
 names(tmin)<-dat$Species[is.na(dat$TMin)==0]
 #names to keep
@@ -112,6 +91,7 @@ preciptree<-keep.tip(tree, namestokeepprecip)
 #plot(preciptree)
 
 
+
 ####Performing PICs and LMs for each variable####
 #pic for tmin
 pic.gstmin<-pic(gstmin, tmintree)
@@ -162,6 +142,27 @@ pic.precip<-pic(precip2, preciptree)
 
 fit.pic.precip<-lm(pic.gsprecip ~ pic.precip +0)
 summary(fit.pic.precip)
+
+#pic ctmax
+pic.gs<-pic(gsctmax, ctmaxtree)
+pic.ctmax<-pic(ctmax2, ctmaxtree)
+
+#fit linear model without intercept ctmax
+fit.pic.ctmax<-lm(pic.gs ~ pic.ctmax +0)
+summary(fit.pic.ctmax)
+
+#pic time ctmin
+pic.gsctmin<-pic(gsctmin, ctmintree)
+pic.ctmin<-pic(ctmin, ctmintree)
+
+#fit linear model without intercept ctmin
+fit.pic.ctmax<-lm(pic.gs ~ pic.ctmax +0)
+summary(fit.pic.ctmax)
+
+#fit linearmodel 
+fit.pic.ctmin<-lm(pic.gsctmin ~pic.ctmin+0)
+summary(fit.pic.ctmin)
+
 
 
 ####Making individual plots####
@@ -364,16 +365,7 @@ linearmin<-ggplot(dat, aes(y=MbDNA_Female, x=CTMin_Overall))+
         axis.text = element_text(size=12),
         title = element_text(size=16, face="bold"))
 
-
 #arrange plots
-# print(linearctmin)
-# print(correctedctmin)
-# print(linearctmax)
-# print(correctedctmax)
-# print(lineartmin)
-# print(correctedtmin)
-# print(lineartmax)
-# print(correctedtmax)
 
 ggarrange(linearctmin, correctedctmin, linearctmax, correctedctmax, lineartmin, correctedtmin, lineartmax, correctedtmax,  nrow=4, ncol=2, labels='AUTO', font.label=list(size=18, face="bold"))
 
