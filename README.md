@@ -5,6 +5,7 @@
 ## 01.consensus_analyses.R 
 
 Purpose:  PIC and linear model of consensus tree and mined data
+
 ## 02.PIC.Figure.R
 
 Purpose:  PIC of consensus tree and figure developement for panelled PIC figure
@@ -48,3 +49,7 @@ Purpose: download all gbif occurence records for the search term "Drosophila". S
 ## 10.research_university_mapping.R
 
 Purpose: uses list of top research universities to get lat-long information and then plots locations of universities on world map
+
+## 11. point_pattern_analysis
+
+Purpose: uses multi type pair correlation function (pdf) to explore the spatial relationship between universities, population density, and GBIF observations
