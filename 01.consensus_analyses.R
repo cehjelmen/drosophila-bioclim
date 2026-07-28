@@ -24,12 +24,12 @@ to.compare<-colnames(dat)
 to.compare<-colnames(dat)
 #make an output table
 #change number of rows to correspond to value
-output.table.lm<-matrix(,nrow=(length(to.compare)-2), ncol=8)
+output.table.lm<-matrix(,nrow=(length(to.compare)-2), ncol=9)
 #name columns
 colnames(output.table.lm)<-c("Variable", 
                               "Estimate", "StError", "tvalue", 
                               "pvalue", "rsquare",
-                              "Adjrsquare", "Fstat")
+                              "Adjrsquare", "Fstat", "Corr.P")
 
 #loop through linear model and make table
 for(i in 3:length(to.compare)){
@@ -65,19 +65,19 @@ lm.out<-as.data.frame(output.table.lm)
 lm.out <- lm.out %>%
   mutate(across(c(Estimate,StError,tvalue,pvalue,rsquare, Adjrsquare, Fstat), as.numeric))
 str(lm.out)
-
+lm.out$Corr.P<-p.adjust(lm.out$pvalue, method="bonferroni")
 
 #writes output as csv file to your working directory
 write.csv(lm.out, "data/output/consensus_analyses/lm_out_data.csv")
 
 #make an output table
 #change number of rows to correspond to value
-output.table.pic.con<-matrix(,nrow=(length(to.compare)-2), ncol=8)
+output.table.pic.con<-matrix(,nrow=(length(to.compare)-2), ncol=9)
 #name columns
 colnames(output.table.pic.con)<-c("Variable", 
                              "Estimate", "StError", "tvalue", 
                              "pvalue", "rsquare",
-                             "Adjrsquare", "Fstat")
+                             "Adjrsquare", "Fstat", "Corr.P")
 
 
 for(i in 3:length(to.compare)){
@@ -123,7 +123,7 @@ pic.con.out<-as.data.frame(output.table.pic.con)
 pic.con.out <- pic.con.out %>%
   mutate(across(c(Estimate,StError,tvalue,pvalue,rsquare, Adjrsquare, Fstat), as.numeric))
 str(pic.con.out)
-
+pic.con.out$Corr.P<-p.adjust(pic.con.out$pvalue, method="bonferroni")
 
 #writes output as csv file to your working directory
 write.csv(pic.con.out, "data/output/consensus_analyses/pic_con_out_data.csv")

@@ -28,9 +28,9 @@ to.keep<-levels(dros$Species)
 ####Make a matrix to put in outputs####
 #rows are for 100 trees with 100 datasets generated from random selection of 
 #bioclim variables from possible lat/longs
-output.table.pic<-matrix(,nrow=19*10000, ncol=10)
+output.table.pic<-matrix(,nrow=19*10000, ncol=12)
 colnames(output.table.pic)<-c("Tree", "Data_set", "Variable", "Estimate", "St. Error", "t-value", "p-value", "r-square",
-                              "Adj. r-square", "F-stat")
+                              "Adj. r-square", "F-stat", "Corr.P", "FDR")
 
 #loop to do it all
 for(i in 1:length(dros.trees)){
@@ -103,6 +103,14 @@ for(k in 5:23){
   #f stat
   output.table.pic[((i-1)*1900+(l-1)*19+(k-4)),10]<-testing$fstatistic[1]
 }
+#here is where the correction goes
+#p values are column 7 in matrix
+#need to find range for nineteen variables
+startrow<-((i-1)*1900+(l-1)*19+(1))
+endrow<-((i-1)*1900+(l-1)*19+(19))
+output.table.pic[startrow:endrow, 11]<-p.adjust(output.table.pic[startrow:endrow,7], method = "bonferroni")
+output.table.pic[startrow:endrow, 12]<-p.adjust(output.table.pic[startrow:endrow,7], method = "BH")
+
 }
 }
 
@@ -119,7 +127,7 @@ str(output.table.pic.df)
 for(i in 1:2){
   output.table.pic.df[[i]]<-as.numeric(output.table.pic.df[[i]])
 }
-for(i in 4:10){
+for(i in 4:12){
   output.table.pic.df[[i]]<-as.numeric(output.table.pic.df[[i]])
 }
 #order variables
@@ -135,7 +143,7 @@ str(output.table.pic.df)
 output.table.pic.df$X<-NULL
 ####plots of PIC####
 ##facet plot of p-values
-pic.facet<-ggplot(output.table.pic.df, aes(x=`p.value`, fill=Variable))+
+pic.facet<-ggplot(output.table.pic.df, aes(x=`p-value`, fill=Variable))+
   geom_density()+
   facet_wrap(~Variable, scales="free")+
   geom_vline(xintercept = 0.05, color="red", linewidth=1.1, linetype="dotdash")+
@@ -147,9 +155,40 @@ pic.facet<-ggplot(output.table.pic.df, aes(x=`p.value`, fill=Variable))+
         axis.title.y=element_blank(),
         axis.title.x=element_text(size=14, face="bold", color="black"))+
   xlim(c(-0.2, 1.1))
+pic.corr.facet<-ggplot(output.table.pic.df, aes(x=`Corr.P`, fill=Variable))+
+  geom_density()+
+  facet_wrap(~Variable, scales="free")+
+  geom_vline(xintercept = 0.05, color="red", linewidth=1.1, linetype="dotdash")+
+  scale_fill_viridis_d()+
+  theme_bw()+
+  theme(legend.position = "none",
+        strip.text = element_text(face="bold", size=14),
+        axis.text=element_text(color="black", size=12),
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(size=14, face="bold", color="black"))+
+  xlim(c(-0.2, 1.1))
+pic.corrbh.facet<-ggplot(output.table.pic.df, aes(x=`FDR`, fill=Variable))+
+  geom_density()+
+  facet_wrap(~Variable, scales="free")+
+  geom_vline(xintercept = 0.05, color="red", linewidth=1.1, linetype="dotdash")+
+  scale_fill_viridis_d()+
+  theme_bw()+
+  theme(legend.position = "none",
+        strip.text = element_text(face="bold", size=14),
+        axis.text=element_text(color="black", size=12),
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(size=14, face="bold", color="black"))+
+  xlim(c(-0.2, 1.1))
+
 #to print pdf
 pdf("data/output/supp_facet_pic_fig.pdf", width=9.84, height=7.77)
 pic.facet
+dev.off()
+pdf("data/output/supp_facet_pic_corr_fig.pdf", width=9.84, height=7.77)
+pic.corr.facet
+dev.off()
+pdf("data/output/supp_facet_pic_corrbh_fig.pdf", width=9.84, height=7.77)
+pic.corrbh.facet
 dev.off()
 
 #hpd calculations
@@ -219,11 +258,11 @@ bio.5<-subset(output.table.pic.df, Variable=="Bio5")
 #   xlim(c(-0.2, 1.1))
 
 #does hte data vary across trees?
-kruskal.test(`p.value` ~ Tree, data=bio.5)
-bio5.comp<-pairwise.wilcox.test(bio.5$`p.value`, bio.5$Tree,
+kruskal.test(`p-value` ~ Tree, data=bio.5)
+bio5.comp<-pairwise.wilcox.test(bio.5$`p-value`, bio.5$Tree,
                      p.adjust.method = "bonferroni")
 bio5.comp.mat<-bio5.comp$p.value
-#it varies in 0.044 comparisons
+#it varies in 0.07414 comparisons
 sum(bio5.comp.mat<0.05, na.rm=TRUE)/sum(bio5.comp.mat>0, na.rm=TRUE)
 
 
@@ -241,12 +280,12 @@ bio.10<-subset(output.table.pic.df, Variable=="Bio10")
 #         axis.title.x=element_text(size=14, face="bold", color="black"))+
 #   xlim(c(-0.2, 1.1))
 
-kruskal.test(`p.value` ~ Tree, data=bio.10)
-bio10.comp<-pairwise.wilcox.test(bio.10$`p.value`, bio.10$Tree,
+kruskal.test(`p-value` ~ Tree, data=bio.10)
+bio10.comp<-pairwise.wilcox.test(bio.10$`p-value`, bio.10$Tree,
                                 p.adjust.method = "bonferroni")
 bio10.comp.mat<-bio10.comp$p.value
 
-#varies in 0.06828 comparisons
+#varies in 0.1109091 comparisons
 sum(bio10.comp.mat<0.05, na.rm=TRUE)/sum(bio10.comp.mat>0, na.rm=TRUE)
 
 
@@ -264,11 +303,11 @@ bio.9<-subset(output.table.pic.df, Variable=="Bio9")
 #         axis.title.x=element_text(size=14, face="bold", color="black"))+
 #   xlim(c(-0.2, 1.1))
 
-kruskal.test(`p.value` ~ Tree, data=bio.9)
-bio9.comp<-pairwise.wilcox.test(bio.9$`p.value`, bio.9$Tree,
+kruskal.test(`p-value` ~ Tree, data=bio.9)
+bio9.comp<-pairwise.wilcox.test(bio.9$`p-value`, bio.9$Tree,
                                  p.adjust.method = "bonferroni")
 bio9.comp.mat<-bio9.comp$p.value
-#varies in 0.1365657 comparisons
+#varies in 0.1872727 comparisons
 sum(bio9.comp.mat<0.05, na.rm=TRUE)/sum(bio9.comp.mat>0, na.rm=TRUE)
 
 
@@ -286,11 +325,11 @@ bio.19<-subset(output.table.pic.df, Variable=="Bio19")
 #         axis.title.x=element_text(size=14, face="bold", color="black"))+
 #   xlim(c(-0.2, 1.1))
 
-kruskal.test(`p.value` ~ Tree, data=bio.19)
-bio19.comp<-pairwise.wilcox.test(bio.19$`p.value`, bio.19$Tree,
+kruskal.test(`p-value` ~ Tree, data=bio.19)
+bio19.comp<-pairwise.wilcox.test(bio.19$`p-value`, bio.19$Tree,
                                 p.adjust.method = "bonferroni")
 bio19.comp.mat<-bio19.comp$p.value
-#varies in 0.01393939 comparisons
+#varies in 0.01454545 comparisons
 sum(bio19.comp.mat<0.05, na.rm=TRUE)/sum(bio19.comp.mat>0, na.rm=TRUE)
 
 
@@ -306,7 +345,7 @@ ggplot(output.table.pic.df, aes(x=Estimate, fill=Variable))+
         axis.title.x=element_text(size=14, face="bold", color="black"))+
   xlim(c((min(output.table.pic.df$Estimate)-0.2), (abs(min((output.table.pic.df$Estimate)-0.2)))))
 #facet plots of adj r squared
-ggplot(output.table.pic.df, aes(x=`Adj..r.square`, fill=Variable))+
+ggplot(output.table.pic.df, aes(x=`Adj. r-square`, fill=Variable))+
   geom_density()+
   facet_wrap(~Variable, scales="free_y")+
   geom_vline(xintercept=0, colour="red", linewidth=1.1, linetype="dotdash")+
@@ -368,14 +407,134 @@ for(i in 2:8){
   signf.table.pic.df[[i]]<-as.numeric(signf.table.pic.df[[i]])
 }
 signf.table.pic.df$Variable<-as.factor(signf.table.pic.df$Variable)
+# # Apply multiple comparison corrections across the 19 bioclimatic variables
+# # using median p-value as the per-variable summary statistic
+# signf.table.pic.df$p.bonferroni <- p.adjust(signf.table.pic.df$median.p, 
+#                                             method = "bonferroni")
+# signf.table.pic.df$p.fdr        <- p.adjust(signf.table.pic.df$median.p, 
+#                                             method = "BH")
+# # Flag which variables survive each correction
+# signf.table.pic.df$sig.bonferroni <- signf.table.pic.df$p.bonferroni < 0.05
+# signf.table.pic.df$sig.fdr        <- signf.table.pic.df$p.fdr < 0.05
+
+
 write.csv(signf.table.pic.df, "data/output/looped_output/significance_proportions_pic.csv")
 
+####signifiance of PIC corrected bonferroni models####
+signf.table.pic.bon<-matrix(, nrow=19, ncol=16)
+colnames(signf.table.pic.bon)<-c("Variable", "<0.05", "<0.01", "<0.001",
+                             "minimum.p", "maximum.p", "mean.p", "median.p",
+                             "minimim.adj.r2", "maximum.adj.r2", "mean.adj.r2", "median.adj.r2",
+                             "minimum.est", "maximum.est", "mean.est", "median.est"
+)
+#fill table with proportions
+for(i in 1:length(levels(output.table.pic.df$Variable))){
+  #input varialbe
+  signf.table.pic.bon[i,1]<-levels(output.table.pic.df$Variable)[i]
+  #subset data by variable
+  dat<-subset(output.table.pic.df, output.table.pic.df$Variable==levels(output.table.pic.df$Variable)[i])
+  #percent significant at 0.05 level
+  signf.table.pic.bon[i,2]<-length(dat[[11]][dat[[11]]<0.05])/length(dat[[11]])
+  #percent significnat at 0.01 level
+  signf.table.pic.bon[i,3]<-length(dat[[11]][dat[[11]]<0.01])/length(dat[[11]])
+  #percent signifiant at 0.001 level
+  signf.table.pic.bon[i,4]<-length(dat[[11]][dat[[11]]<0.001])/length(dat[[11]])
+  #minimum
+  signf.table.pic.bon[i,5]<-min(dat[[11]])
+  #maximum
+  signf.table.pic.bon[i,6]<-max(dat[[11]])
+  #mean
+  signf.table.pic.bon[i,7]<-mean(dat[[11]])
+  #median
+  signf.table.pic.bon[i,8]<-median(dat[[11]])
+  #min adj R2
+  signf.table.pic.bon[i,9]<-min(dat[[9]])
+  #max adj r2
+  signf.table.pic.bon[i,10]<-max(dat[[9]])
+  #mean adj r2
+  signf.table.pic.bon[i,11]<-mean(dat[[9]])
+  #median adj r2
+  signf.table.pic.bon[i,12]<-median(dat[[9]])
+  #min est.
+  signf.table.pic.bon[i,13]<-min(dat[[4]])
+  #max est
+  signf.table.pic.bon[i,14]<-max(dat[[4]])
+  #mean est
+  signf.table.pic.bon[i,15]<-mean(dat[[4]])
+  #median est
+  signf.table.pic.bon[i,16]<-median(dat[[4]])
+}
+#make matrix and fix structure
+signf.table.pic.bon.df<-as.data.frame(signf.table.pic.bon)
+for(i in 2:8){
+  signf.table.pic.bon.df[[i]]<-as.numeric(signf.table.pic.bon.df[[i]])
+}
+signf.table.pic.bon.df$Variable<-as.factor(signf.table.pic.bon.df$Variable)
+
+write.csv(signf.table.pic.bon.df, "data/output/looped_output/significance_proportions_pic_bonferroni.csv")
+
+####signifiance of PIC corrected bh models####
+signf.table.pic.bh<-matrix(, nrow=19, ncol=16)
+colnames(signf.table.pic.bh)<-c("Variable", "<0.05", "<0.01", "<0.001",
+                                 "minimum.p", "maximum.p", "mean.p", "median.p",
+                                 "minimim.adj.r2", "maximum.adj.r2", "mean.adj.r2", "median.adj.r2",
+                                 "minimum.est", "maximum.est", "mean.est", "median.est"
+)
+#fill table with proportions
+for(i in 1:length(levels(output.table.pic.df$Variable))){
+  #input varialbe
+  signf.table.pic.bh[i,1]<-levels(output.table.pic.df$Variable)[i]
+  #subset data by variable
+  dat<-subset(output.table.pic.df, output.table.pic.df$Variable==levels(output.table.pic.df$Variable)[i])
+  #percent significant at 0.05 level
+  signf.table.pic.bh[i,2]<-length(dat[[12]][dat[[12]]<0.05])/length(dat[[12]])
+  #percent significnat at 0.01 level
+  signf.table.pic.bh[i,3]<-length(dat[[12]][dat[[12]]<0.01])/length(dat[[12]])
+  #percent signifiant at 0.001 level
+  signf.table.pic.bh[i,4]<-length(dat[[12]][dat[[12]]<0.001])/length(dat[[12]])
+  #minimum
+  signf.table.pic.bh[i,5]<-min(dat[[12]])
+  #maximum
+  signf.table.pic.bh[i,6]<-max(dat[[12]])
+  #mean
+  signf.table.pic.bh[i,7]<-mean(dat[[12]])
+  #median
+  signf.table.pic.bh[i,8]<-median(dat[[12]])
+  #min adj R2
+  signf.table.pic.bh[i,9]<-min(dat[[9]])
+  #max adj r2
+  signf.table.pic.bh[i,10]<-max(dat[[9]])
+  #mean adj r2
+  signf.table.pic.bh[i,11]<-mean(dat[[9]])
+  #median adj r2
+  signf.table.pic.bh[i,12]<-median(dat[[9]])
+  #min est.
+  signf.table.pic.bh[i,13]<-min(dat[[4]])
+  #max est
+  signf.table.pic.bh[i,14]<-max(dat[[4]])
+  #mean est
+  signf.table.pic.bh[i,15]<-mean(dat[[4]])
+  #median est
+  signf.table.pic.bh[i,16]<-median(dat[[4]])
+}
+#make matrix and fix structure
+signf.table.pic.bh.df<-as.data.frame(signf.table.pic.bh)
+for(i in 2:8){
+  signf.table.pic.bh.df[[i]]<-as.numeric(signf.table.pic.bh.df[[i]])
+}
+signf.table.pic.bh.df$Variable<-as.factor(signf.table.pic.bh.df$Variable)
+
+write.csv(signf.table.pic.bh.df, "data/output/looped_output/significance_proportions_pic_bh.csv")
+
+
 ####reading things in for some updated plots
-signf.table.pic.df<-read.csv("data/output/looped_output/pic.output.everything.csv")
-output.table.pic.df<-signf.table.pic.df
+#signf.table.pic.df<-read.csv("data/output/looped_output/pic.output.everything.csv")
+#output.table.pic.df<-signf.table.pic.df
 str(signf.table.pic.df)
 #which variable has highest proportion of significance, it's now BIO19
 signf.table.pic.df$Variable[signf.table.pic.df$`<0.05`==max(signf.table.pic.df$`<0.05`)]
+signf.table.pic.bon.df$Variable[signf.table.pic.bon.df$`<0.05`==max(signf.table.pic.bon.df$`<0.05`)]
+signf.table.pic.bh.df$Variable[signf.table.pic.bh.df$`<0.05`==max(signf.table.pic.bh.df$`<0.05`)]
 
 #bio5, bio9, bio10, bio19
 #sig.dat<-subset(output.table.pic.df, output.table.pic.df=="Bio5")
@@ -386,6 +545,8 @@ sig.dat$Variable<-factor(sig.dat$Variable, ordered=TRUE,
                          levels=c("Bio5", "Bio9", "Bio10", "Bio19"))
 
 str(sig.dat)
+colnames(sig.dat)[7]<-"p.value"
+colnames(sig.dat)[9]<-'Adj..r.square'
 library(plyr)
 #sometimes these have to have modified names in order to match
 #depending on if you re-read in data, it might be `p-value` vs. p.value
@@ -404,7 +565,9 @@ mu.e <- ddply(sig.dat, "Variable", summarise, grp.median=median(Estimate))
 #  coord_flip()
 
 
-
+str(sig.dat)
+str(mu)
+mu$grp.median
 p.val<-ggplot(sig.dat, aes(x=p.value, fill=Variable))+
   geom_density(alpha=0.4)+
   xlim(-0.3,1)+
@@ -418,7 +581,7 @@ p.val<-ggplot(sig.dat, aes(x=p.value, fill=Variable))+
   geom_vline(data=mu, aes(xintercept=grp.median, color=Variable),
              linewidth=1)+
   annotate("text", x=1, y=7, 
-           label=("Median p-value\nBio5 = 0.075\nBio9 = 0.102\nBio10 = 0.058\nBio19 = 0.061"),
+           label=("Median p-value\nBio5 = 0.074\nBio9 = 0.097\nBio10 = 0.058\nBio19 = 0.061"),
            size=4, hjust=1)+
   theme_bw()+
   theme(
@@ -429,7 +592,7 @@ p.val<-ggplot(sig.dat, aes(x=p.value, fill=Variable))+
     legend.text = element_text(size=14, color="black"),
     legend.position = "bottom"
   )
-
+mu.r$grp.median
 adj.r<-ggplot(sig.dat, aes(x=Adj..r.square, fill=Variable))+
   geom_density(alpha=0.4)+
   xlim(-0.3,0.35)+
@@ -441,7 +604,7 @@ adj.r<-ggplot(sig.dat, aes(x=Adj..r.square, fill=Variable))+
   geom_vline(data=mu.r, aes(xintercept=grp.median, color=Variable),
              linewidth=1)+
   annotate("text", x=0.35, y=11.75, 
-           label=("Median Adj. R-squared\nBio5 = 0.038\nBio9 = 0.033\nBio10 = 0.043\nBio19 = 0.045"),
+           label=("Median Adj. R-squared\nBio5 = 0.031\nBio9 = 0.0325\nBio10 = 0.036\nBio19 = 0.035"),
            size=4, hjust=1)+
   theme_bw()+
   theme(
@@ -452,7 +615,7 @@ adj.r<-ggplot(sig.dat, aes(x=Adj..r.square, fill=Variable))+
     legend.text = element_text(size=14, color="black"),
     legend.position = "bottom"
   )
-  
+mu.e$grp.median 
 est<-ggplot(sig.dat, aes(x=`Estimate`, fill=Variable))+
     geom_density(alpha=0.4)+
     xlim(-0.7,0.7)+
@@ -464,7 +627,7 @@ est<-ggplot(sig.dat, aes(x=`Estimate`, fill=Variable))+
   geom_vline(data=mu.e, aes(xintercept=grp.median, color=Variable),
              linewidth=1)+
   annotate("text", x=0.7, y=18.5, 
-           label=("Median Estimate\nBio5 = -0.244\nBio9 = -0.056\nBio10 = -0.207\nBio19 = -0.039"),
+           label=("Median Estimate\nBio5 = -0.245\nBio9 = -0.058\nBio10 = -0.210\nBio19 = -0.041"),
            size=4, hjust=1)+
   theme_bw()+
   theme(
@@ -485,6 +648,130 @@ pdf("data/output/figure3.pdf", width=14.21, height=4.25)
 unique.bioclim
 dev.off()
 
+#doing the same for BH correction
+####reading things in for some updated plots
+#signf.table.pic.df<-read.csv("data/output/looped_output/pic.output.everything.csv")
+#output.table.pic.df<-signf.table.pic.df
+str(signf.table.pic.df)
+#which variable has highest proportion of significance, it's now BIO19
+signf.table.pic.df$Variable[signf.table.pic.df$`<0.05`==max(signf.table.pic.df$`<0.05`)]
+signf.table.pic.bon.df$Variable[signf.table.pic.bon.df$`<0.05`==max(signf.table.pic.bon.df$`<0.05`)]
+signf.table.pic.bh.df$Variable[signf.table.pic.bh.df$`<0.05`==max(signf.table.pic.bh.df$`<0.05`)]
+
+#bio5, bio9, bio10, bio19
+#sig.dat<-subset(output.table.pic.df, output.table.pic.df=="Bio5")
+sig.dat.bh <- output.table.pic.df[output.table.pic.df$Variable %in% c("Bio5", "Bio9",
+                                                                   "Bio10", "Bio19"), ]
+sig.dat.bh$Variable<-as.character(sig.dat.bh$Variable)
+sig.dat.bh$Variable<-factor(sig.dat.bh$Variable, ordered=TRUE,
+                         levels=c("Bio5", "Bio9", "Bio10", "Bio19"))
+
+str(sig.dat.bh)
+colnames(sig.dat.bh)[7]<-"p.value"
+colnames(sig.dat.bh)[9]<-'Adj..r.square'
+library(plyr)
+#sometimes these have to have modified names in order to match
+#depending on if you re-read in data, it might be `p-value` vs. p.value
+mu <- ddply(sig.dat.bh, "Variable", summarise, grp.median=median(FDR))
+mu.r <- ddply(sig.dat.bh, "Variable", summarise, grp.median=median(Adj..r.square))
+mu.e <- ddply(sig.dat.bh, "Variable", summarise, grp.median=median(Estimate))
+# me.ev.<-ddply(output.table.pic.df, "Variable", summarise, grp.median=median(`p-value`))
+
+# ggplot(output.table.pic.df, aes(x=`p-value`, fill=Variable))+
+#   geom_density(alpha=0.4)+
+#   xlim(-0.3,1)+
+#   geom_vline(xintercept = 0.05, color="black", linetype=
+#                "dashed", linewidth=2)+
+#   geom_vline(data=me.ev., aes(xintercept=grp.median, color=Variable), linewidth=1)+
+#   theme_bw()#+
+#  coord_flip()
+
+
+str(sig.dat.bh)
+str(mu)
+mu$grp.median
+p.val<-ggplot(sig.dat.bh, aes(x=FDR, fill=Variable))+
+  geom_density(alpha=0.4)+
+  xlim(-0.3,1)+
+  scale_fill_viridis_d(end=0.8)+
+  scale_color_viridis_d(end=0.8)+
+  geom_vline(xintercept = 0.05, color="red",
+             linewidth=2, linetype="dashed")+
+  geom_vline(xintercept = 0, color="black",
+             linetype="dashed", linewidth=1.5)+
+  
+  geom_vline(data=mu, aes(xintercept=grp.median, color=Variable),
+             linewidth=1)+
+  annotate("text", x=1, y=7, 
+           label=("Median p-value\nBio5 = 0.271\nBio9 = 0.320\nBio10 = 0.246\nBio19 = 0.289"),
+           size=4, hjust=1)+
+  theme_bw()+
+  xlab("Benjamini-Hochberg\nCorrection")+
+  theme(
+    axis.title.x = element_text(size=16, color="black", face="bold"),
+    axis.title.y = element_blank(),
+    axis.text=element_text(size=14, color="black"),
+    legend.title = element_blank(),
+    legend.text = element_text(size=14, color="black"),
+    legend.position = "bottom"
+  )
+mu.r$grp.median
+adj.r<-ggplot(sig.dat.bh, aes(x=Adj..r.square, fill=Variable))+
+  geom_density(alpha=0.4)+
+  xlim(-0.3,0.35)+
+  ylim(0,14)+
+  scale_fill_viridis_d(end=0.8)+
+  scale_color_viridis_d(end=0.8)+
+  geom_vline(xintercept = 0, color="black", 
+             linetype="dashed", linewidth=1.5)+
+  geom_vline(data=mu.r, aes(xintercept=grp.median, color=Variable),
+             linewidth=1)+
+  annotate("text", x=0.35, y=11.75, 
+           label=("Median Adj. R-squared\nBio5 = 0.031\nBio9 = 0.0325\nBio10 = 0.036\nBio19 = 0.035"),
+           size=4, hjust=1)+
+  theme_bw()+
+  xlab("Adj. r-square")+
+  theme(
+    axis.title.x = element_text(size=16, color="black", face="bold"),
+    axis.title.y = element_blank(),
+    axis.text=element_text(size=14, color="black"),
+    legend.title = element_blank(),
+    legend.text = element_text(size=14, color="black"),
+    legend.position = "bottom"
+  )
+mu.e$grp.median 
+est<-ggplot(sig.dat.bh, aes(x=`Estimate`, fill=Variable))+
+  geom_density(alpha=0.4)+
+  xlim(-0.7,0.7)+
+  ylim(0,22)+
+  scale_fill_viridis_d(end=0.8)+
+  scale_color_viridis_d(end=0.8)+
+  geom_vline(xintercept = 0, color="black",
+             linetype="dashed", linewidth=1.5)+
+  geom_vline(data=mu.e, aes(xintercept=grp.median, color=Variable),
+             linewidth=1)+
+  annotate("text", x=0.7, y=18.5, 
+           label=("Median Estimate\nBio5 = -0.245\nBio9 = -0.058\nBio10 = -0.210\nBio19 = -0.041"),
+           size=4, hjust=1)+
+  theme_bw()+
+  theme(
+    axis.title.x = element_text(size=16, color="black", face="bold"),
+    axis.title.y = element_blank(),
+    axis.text=element_text(size=14, color="black"),
+    legend.title = element_blank(),
+    legend.text = element_text(size=14, color="black"),
+    legend.position = "bottom"
+  )
+
+
+unique.bioclim<-ggarrange(p.val, adj.r, est, common.legend = TRUE, legend="bottom",
+                          nrow=1, labels="auto",
+                          hjust=-0.1, align="hv",
+                          font.label = list(size=20))
+pdf("data/output/figure3.bh.pdf", width=14.21, height=4.25)
+unique.bioclim
+dev.off()
+
 # ?ggarrange
 # ggplot(sig.dat, aes(x=`p-value`, y=Variable,fill=Variable))+
 #   geom_violin(alpha=0.6, draw_quantiles = TRUE)+
@@ -500,11 +787,11 @@ dev.off()
 
 
 #####linear Models####
-output.table.lm<-matrix(,nrow=19*1000, ncol=9)
+output.table.lm<-matrix(,nrow=19*1000, ncol=11)
 colnames(output.table.lm)<-c("Data_set",
                              "Variable", "Estimate", "St. Error",
                              "t-value", "p-value", "r-square",
-                              "Adj. r-square", "F-stat")
+                              "Adj. r-square", "F-stat", "Corr.P", "FDR")
 
 #loop to do 1000 sets of data randomly selecting geographical records for species
 #with more than one record
@@ -563,6 +850,13 @@ for(i in 1:1000){
     #f stat
     output.table.lm[((i-1)*19+(k-4)),9]<-testing$fstatistic[1]
   }
+  #here is where the correction goes
+  #p values are column 6 in matrix
+  #need to find range for nineteen variables
+  startrow<-((i-1)*19+(1))
+  endrow<-((i-1)*19+(19))
+  output.table.lm[startrow:endrow, 10]<-p.adjust(output.table.lm[startrow:endrow,6], method = "bonferroni")
+  output.table.lm[startrow:endrow, 11]<-p.adjust(output.table.lm[startrow:endrow,6], method = "BH")
 }
 #write output
 write.csv(output.table.lm, "data/output/looped_output/lm.output.everything.csv")
@@ -574,7 +868,7 @@ output.table.lm.df<-as.data.frame(output.table.lm)
 for(i in 1:1){
   output.table.lm.df[[i]]<-as.numeric(output.table.lm.df[[i]])
 }
-for(i in 3:9){
+for(i in 3:11){
   output.table.lm.df[[i]]<-as.numeric(output.table.lm.df[[i]])
 }
 output.table.lm.df$Variable<-factor(output.table.lm.df$Variable, ordered=TRUE, 
@@ -583,8 +877,34 @@ output.table.lm.df$Variable<-factor(output.table.lm.df$Variable, ordered=TRUE,
                                              "Bio12", "Bio13", "Bio14", "Bio15",
                                              "Bio16", "Bio17", "Bio18", "Bio19"))
 ####Linear model plots####
+str(output.table.lm.df)
 #facet plots of p-values
-lm.facet<-ggplot(output.table.lm.df, aes(x=`p.value`, fill=Variable))+
+lm.facet<-ggplot(output.table.lm.df, aes(x=`p-value`, fill=Variable))+
+  geom_density()+
+  facet_wrap(~Variable, scales="free")+
+  geom_vline(xintercept = 0.05, color="red", linewidth=1.1, linetype="dotdash")+
+  theme_bw()+
+  theme(legend.position = "none",
+        strip.text = element_text(face="bold", size=14),
+        axis.text=element_text(color="black", size=8),
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(size=14, face="bold", color="black"))+
+  xlim(c(-0.2, 1))
+
+lm.facet.bon<-ggplot(output.table.lm.df, aes(x=`Corr.P`, fill=Variable))+
+  geom_density()+
+  facet_wrap(~Variable, scales="free")+
+  geom_vline(xintercept = 0.05, color="red", linewidth=1.1, linetype="dotdash")+
+  theme_bw()+
+  theme(legend.position = "none",
+        strip.text = element_text(face="bold", size=14),
+        axis.text=element_text(color="black", size=8),
+        axis.title.y=element_blank(),
+        axis.title.x=element_text(size=14, face="bold", color="black"))+
+  xlim(c(-0.2, 1))
+
+
+lm.facet.bh<-ggplot(output.table.lm.df, aes(x=`FDR`, fill=Variable))+
   geom_density()+
   facet_wrap(~Variable, scales="free")+
   geom_vline(xintercept = 0.05, color="red", linewidth=1.1, linetype="dotdash")+
@@ -599,6 +919,13 @@ lm.facet<-ggplot(output.table.lm.df, aes(x=`p.value`, fill=Variable))+
 pdf("data/output/looped_output/lm.model.facet.pvalue.pdf", width=9.83, height=7.76)
 lm.facet
 dev.off()
+pdf("data/output/looped_output/lm.model.facet.pvalue.bon.pdf", width=9.83, height=7.76)
+lm.facet.bon
+dev.off()
+pdf("data/output/looped_output/lm.model.facet.pvalue.bh.pdf", width=9.83, height=7.76)
+lm.facet.bh
+dev.off()
+
 ##Facet plot of "estimates" coefficients 
 ggplot(output.table.lm.df, aes(x=Estimate, fill=Variable))+
   geom_density()+
@@ -612,7 +939,7 @@ ggplot(output.table.lm.df, aes(x=Estimate, fill=Variable))+
         axis.title.x=element_text(size=14, face="bold", color="black"))
   
 ##Facet plot of adj. r-square
-ggplot(output.table.lm.df, aes(x=`Adj..r.square`, fill=Variable))+
+ggplot(output.table.lm.df, aes(x=`Adj. r-square`, fill=Variable))+
   geom_density()+
   facet_wrap(~Variable)+
   geom_vline(xintercept=0, colour="red", linewidth=1.1, linetype="dotdash")+
@@ -650,5 +977,55 @@ signf.table.lm.df$Variable<-as.factor(signf.table.lm.df$Variable)
 str(signf.table.lm.df)
 write.csv(signf.table.lm.df, "data/output/looped_output/significance_proportions_lm.csv")
 
+#emptpy matrix of values
+signf.table.lm.bon<-matrix(, nrow=19, ncol=4)
+colnames(signf.table.lm.bon)<-c("Variable", "%p<0.05", "%p<0.01", "%p<0.001")
+colnames(output.table.lm.df)
+#loop through to get proportions of significant values
+for(i in 1:length(levels(output.table.lm.df$Variable))){
+  #input varialbe
+  signf.table.lm.bon[i,1]<-levels(output.table.lm.df$Variable)[i]
+  #subset data by variable
+  dat<-subset(output.table.lm.df, output.table.lm.df$Variable==levels(output.table.lm.df$Variable)[i])
+  #percent significant at 0.05 level
+  signf.table.lm.bon[i,2]<-length(dat[[10]][dat[[10]]<0.05])/length(dat[[10]])
+  #percent significnat at 0.01 level
+  signf.table.lm.bon[i,3]<-length(dat[[10]][dat[[10]]<0.01])/length(dat[[10]])
+  #percent signifiant at 0.001 level
+  signf.table.lm.bon[i,4]<-length(dat[[10]][dat[[10]]<0.001])/length(dat[[10]])
+}
+#make matrix a dataframe
+signf.table.lm.bon.df<-as.data.frame(signf.table.lm.bon)
+for(i in 2:4){
+  signf.table.lm.bon.df[[i]]<-as.numeric(signf.table.lm.bon.df[[i]])
+}
+signf.table.lm.bon.df$Variable<-as.factor(signf.table.lm.bon.df$Variable)
+str(signf.table.lm.bon.df)
+write.csv(signf.table.lm.bon.df, "data/output/looped_output/significance_proportions_lm_bon.csv")
 
+#emptpy matrix of values
+signf.table.lm.bh<-matrix(, nrow=19, ncol=4)
+colnames(signf.table.lm.bh)<-c("Variable", "%p<0.05", "%p<0.01", "%p<0.001")
+colnames(output.table.lm.df)
+#loop through to get proportions of significant values
+for(i in 1:length(levels(output.table.lm.df$Variable))){
+  #input varialbe
+  signf.table.lm.bh[i,1]<-levels(output.table.lm.df$Variable)[i]
+  #subset data by variable
+  dat<-subset(output.table.lm.df, output.table.lm.df$Variable==levels(output.table.lm.df$Variable)[i])
+  #percent significant at 0.05 level
+  signf.table.lm.bh[i,2]<-length(dat[[11]][dat[[11]]<0.05])/length(dat[[11]])
+  #percent significnat at 0.01 level
+  signf.table.lm.bh[i,3]<-length(dat[[11]][dat[[11]]<0.01])/length(dat[[11]])
+  #percent signifiant at 0.001 level
+  signf.table.lm.bh[i,4]<-length(dat[[11]][dat[[11]]<0.001])/length(dat[[11]])
+}
+#make matrix a dataframe
+signf.table.lm.bh.df<-as.data.frame(signf.table.lm.bh)
+for(i in 2:4){
+  signf.table.lm.bh.df[[i]]<-as.numeric(signf.table.lm.bh.df[[i]])
+}
+signf.table.lm.bh.df$Variable<-as.factor(signf.table.lm.bh.df$Variable)
+str(signf.table.lm.bh.df)
+write.csv(signf.table.lm.bh.df, "data/output/looped_output/significance_proportions_lm_bh.csv")
 
